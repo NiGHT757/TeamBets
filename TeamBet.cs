@@ -10,7 +10,7 @@ public class TeamBet : BasePlugin
 {
     public override string ModuleName => "TeamBet";
 
-    public override string ModuleVersion => "0.0.1";
+    public override string ModuleVersion => "0.0.2";
     
     public override string ModuleAuthor => "NiGHT";
     
@@ -44,42 +44,16 @@ public class TeamBet : BasePlugin
         Directory = ModuleDirectory;
         new CFG().CheckConfig(ModuleDirectory);
         
-        if (hotReload)
-        {
-            var players = Utilities.GetPlayers().Where(x => !x.IsBot);
-            foreach (var player in players)
-            {
-                uint index = player.EntityIndex!.Value.Value;
-                if (!g_PlayerInfo.ContainsKey(index))
-                {
-                    g_PlayerInfo.Add(index, new PlayerInfo());
-                }
-            }
-        }
-        
         RegisterListener<Listeners.OnClientDisconnect>(playerSlot =>
         {
             var player = Utilities.GetPlayerFromSlot(playerSlot);
-            if (player == null || !player.IsValid || player.UserId < 0 || player.IsBot)
+            if (player == null || player.IsBot)
                 return;
-            uint finalSlot = (uint)(playerSlot + 1);
+
+            uint index = player.EntityIndex!.Value.Value;
             
-            if (g_PlayerInfo.ContainsKey(finalSlot))
-                g_PlayerInfo.Remove(finalSlot);
-        });
-        
-        RegisterListener<Listeners.OnClientConnected>(playerSlot =>
-        {
-            var player = Utilities.GetPlayerFromSlot(playerSlot);
-            if (player == null || !player.IsValid || player.UserId < 0 || player.IsBot)
-                return;
-            
-            uint finalSlot = (uint)(playerSlot + 1);
-            
-            if (!g_PlayerInfo.ContainsKey(finalSlot))
-            {
-                g_PlayerInfo.Add(finalSlot, new PlayerInfo());
-            }
+            if (g_PlayerInfo.ContainsKey(index))
+                g_PlayerInfo.Remove(index);
         });
         
         RegisterEventHandler<EventRoundEnd>((@event, info) =>
@@ -107,6 +81,8 @@ public class TeamBet : BasePlugin
                 }
                 else
                     player.PrintToChat($"[{ChatColors.Red}TeamBet{ChatColors.Default}] You lost {ChatColors.Red}${g_PlayerInfo[index].Amount}");
+
+                g_PlayerInfo.Remove(index);
             }
             
             return HookResult.Continue;
@@ -116,21 +92,17 @@ public class TeamBet : BasePlugin
         {
             g_IsBetRestricted = false;
 
-            var players = Utilities.GetPlayers();
+            var players = Utilities.GetPlayers().Where(x => !x.IsBot);
 
             foreach (var player in players)
             {
                 uint index = player.EntityIndex!.Value.Value;
-                if (!g_PlayerInfo.ContainsKey(index))
-                    continue;
-                
-                g_PlayerInfo[index].Team = 0;
-                g_PlayerInfo[index].Amount = 0;
+                if (g_PlayerInfo.ContainsKey(index))
+                    g_PlayerInfo.Remove(index);
             }
             
             return HookResult.Continue;
         });
-        
         RegisterEventHandler<EventPlayerChat>((@event, info) =>
         {
             var player = Utilities.GetPlayerFromUserid(@event.Userid);
@@ -153,9 +125,15 @@ public class TeamBet : BasePlugin
                 uint index = player.EntityIndex!.Value.Value;
                 string[] teams = {"None", "Spec", $"{ChatColors.Red}T{ChatColors.Default}", $"{ChatColors.Blue}CT{ChatColors.Default}"};
 
-                if(g_PlayerInfo[index].Team != 0)
+                if(g_PlayerInfo.ContainsKey(index))
                 {
                     player.PrintToChat($" {ChatColors.Red}ERROR:{ChatColors.Default} You already bet, your bet: {teams[g_PlayerInfo[index].Team]} {ChatColors.Green}${g_PlayerInfo[index].Amount}");
+                    return HookResult.Continue;
+                }
+
+                if (g_IsBetRestricted)
+                {
+                    player.PrintToChat($" {ChatColors.Red}ERROR:{ChatColors.Default} You can't bet right now.");
                     return HookResult.Continue;
                 }
                 
@@ -234,8 +212,11 @@ public class TeamBet : BasePlugin
                     return HookResult.Continue;
                 }
                 
-                g_PlayerInfo[index].Team = secondArg == "t" ? 2 : 3;
-                g_PlayerInfo[index].Amount = betAmount;
+                g_PlayerInfo.Add(index, new PlayerInfo
+                {
+                    Team = secondArg == "t" ? 2 : 3,
+                    Amount = betAmount
+                });
                 
                 player.InGameMoneyServices.Account -= betAmount;
                 player.PrintToChat($"[{ChatColors.Red}TeamBet{ChatColors.Default}] You bet {ChatColors.Green}${betAmount}{ChatColors.Default} on {teams[g_PlayerInfo[index].Team]} team.");
