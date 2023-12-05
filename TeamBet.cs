@@ -1,7 +1,7 @@
-﻿using System.Reflection;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
@@ -30,10 +30,11 @@ public class TeamBetConfig : BasePluginConfig
     [JsonPropertyName("YouBetMessage")] public string? YouBetMessage { get; set; } = "{chat-prefix} You bet {green}${amount}{default} on {team} team.";
 }
 
+[MinimumApiVersion(100)]
 public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
 {
     public override string ModuleName => "TeamBet";
-    public override string ModuleVersion => "0.0.3";
+    public override string ModuleVersion => "0.0.4";
     public override string ModuleAuthor => "NiGHT";
     
     public TeamBetConfig Config { get; set; } = null!;
@@ -251,7 +252,7 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
             var pattern = $"{{{field.Name}}}";
             if (msg.Contains(pattern, StringComparison.OrdinalIgnoreCase))
             {
-                modifiedValue = modifiedValue.Replace(pattern, field.GetValue(null).ToString(), StringComparison.OrdinalIgnoreCase);
+                modifiedValue = modifiedValue.Replace(pattern, field.GetValue(null)?.ToString(), StringComparison.OrdinalIgnoreCase);
             }
             if (msg.StartsWith(pattern, StringComparison.OrdinalIgnoreCase))
                 modifiedValue = $" {modifiedValue}";
