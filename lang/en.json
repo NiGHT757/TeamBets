@@ -1,0 +1,15 @@
+{
+	"YouWonMessage": "[{lightred}TeamBet{default}] You won {green}${amount}{default}!.",
+	"YouLostMessage": "[{lightred}TeamBet{default}] You lost {red}${amount}{default}!.",
+	"UsageCommandMessage": "[{lightred}TeamBet{default}] Usage: /bet <team> <amount>.",
+	"AlreadyBetMessage": "[{lightred}TeamBet{default}] You already bet, your bet: {team} {green}${amount}",
+	"RestrictedBetMessage": "[{lightred}TeamBet{default}] You can't bet right now.",
+	"BetAliveMessage": "[{lightred}TeamBet{default}] You can't bet while you're alive.",
+	"RestrictedTeamMessage": "[{lightred}TeamBet{default}] You can't bet from this team.",
+	"BetAllPlayersDeathMessage": "[{lightred}TeamBet{default}] All players are dead, you can't bet.",
+	"InvalidTeamMessage": "[{lightred}TeamBet{default}] Invalid team, use {red}t{default} or {blue}ct{default}.",
+	"MaxMoneyMessage": "[{lightred}TeamBet{default}] You can't bet, you already have the maximum amount of money.",
+	"InvalidAmountMinMaxMessage": "[{lightred}TeamBet{default}] Invalid amount, the minimum amount is {green}${min}{default} and the maximum amount is {green}${max}{default}.",
+	"NotEnoughMoneyMessage": "[{lightred}TeamBet{default}] You need {red}{money}{default} more to bet {red}{amount}{default}.",
+	"YouBetMessage": "[{lightred}TeamBet{default}] You bet {green}${amount}{default} on {team} team."
+}
