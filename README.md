@@ -1,6 +1,6 @@
 # TeamBets
-[![Downloads](https://img.shields.io/github/downloads/NiGHT757/SlayLosers/total.svg)](https://github.com/USERNAME/REPOSITORY/releases)
-[![License](https://img.shields.io/github/license/NiGHT757/SlayLosers.svg)](https://github.com/USERNAME/REPOSITORY/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/NiGHT757/TeamBets/total.svg)](https://github.com/USERNAME/REPOSITORY/releases)
+[![License](https://img.shields.io/github/license/NiGHT757/TeamBets.svg)](https://github.com/USERNAME/REPOSITORY/blob/main/LICENSE)
 
 Simple ported version of [TeamBets](https://github.com/NiGHT757/teambet)
 
