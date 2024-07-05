@@ -34,35 +34,18 @@ public class TeamBetConfig : BasePluginConfig
 public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
 {
     public override string ModuleName => "TeamBet";
-    public override string ModuleVersion => "0.0.4";
+    public override string ModuleVersion => "0.0.5";
     public override string ModuleAuthor => "NiGHT";
     
-    public TeamBetConfig Config { get; set; } = null!;
+    public required TeamBetConfig Config { get; set; }
     public void OnConfigParsed(TeamBetConfig config)
     {
         Config = config;
-        
-        if (Config.ChatPrefix != null) Config.ChatPrefix = ModifyColorValue(Config.ChatPrefix);
-        if (Config.YouWonMessage != null) Config.YouWonMessage = ModifyColorValue(Config.YouWonMessage);
-        if (Config.YouLostMessage != null) Config.YouLostMessage = ModifyColorValue(Config.YouLostMessage);
-        if (Config.UsageCommandMessage != null) Config.UsageCommandMessage = ModifyColorValue(Config.UsageCommandMessage);
-        if (Config.AlreadyBetMessage != null) Config.AlreadyBetMessage = ModifyColorValue(Config.AlreadyBetMessage);
-        if (Config.RestrictedBetMessage != null) Config.RestrictedBetMessage = ModifyColorValue(Config.RestrictedBetMessage);
-        if (Config.BetAliveMessage != null) Config.BetAliveMessage = ModifyColorValue(Config.BetAliveMessage);
-        if (Config.RestrictedTeamMessage != null) Config.RestrictedTeamMessage = ModifyColorValue(Config.RestrictedTeamMessage);
-        if (Config.BetAllPlayersDeathMessage != null) Config.BetAllPlayersDeathMessage = ModifyColorValue(Config.BetAllPlayersDeathMessage);
-        if (Config.InvalidTeamMessage != null) Config.InvalidTeamMessage = ModifyColorValue(Config.InvalidTeamMessage);
-        if (Config.MaxMoneyMessage != null) Config.MaxMoneyMessage = ModifyColorValue(Config.MaxMoneyMessage);
-        if (Config.InvalidAmountMessage != null) Config.InvalidAmountMessage = ModifyColorValue(Config.InvalidAmountMessage);
-        if (Config.InvalidAmountMinMaxMessage != null) Config.InvalidAmountMinMaxMessage = ModifyColorValue(Config.InvalidAmountMinMaxMessage);
-        if (Config.NotEnoughMoneyMessage != null) Config.NotEnoughMoneyMessage = ModifyColorValue(Config.NotEnoughMoneyMessage);
-        if (Config.YouBetMessage != null) Config.YouBetMessage = ModifyColorValue(Config.YouBetMessage);
     }
     
     private static bool HasTeamPlayersAlive(int team)
     {
-        var players = Utilities.GetPlayers();
-        return players.Where(player => player.TeamNum == team).Any(player => player.PawnIsAlive);
+        return Utilities.GetPlayers().Where(player => player.TeamNum == team).Any(player => player.PawnIsAlive);
     }
     
     private class PlayerInfo
@@ -71,8 +54,8 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
         public int Amount { get; set; }
     }
     
-    private Dictionary<uint, PlayerInfo> _gPlayerInfo = new Dictionary<uint, PlayerInfo>();
-    private bool _gIsBetRestricted = false;
+    private readonly Dictionary<uint, PlayerInfo> _gPlayerInfo = new();
+    private bool _gIsBetRestricted;
     
     public override void Load(bool hotReload)
     {
@@ -83,12 +66,11 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
                 return;
 
             var index = player.Index;
-            
-            if (_gPlayerInfo.ContainsKey(index))
-                _gPlayerInfo.Remove(index);
+
+            _gPlayerInfo.Remove(index);
         });
         
-        RegisterEventHandler<EventRoundEnd>((@event, info) =>
+        RegisterEventHandler<EventRoundEnd>((@event, _) =>
         {
             _gIsBetRestricted = true;
             var cvar = ConVar.Find("mp_maxmoney");
@@ -104,7 +86,7 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
                 var index = list.Key;
                 var player = Utilities.GetPlayerFromIndex((int)index);
                 
-                if (!player.IsValid || _gPlayerInfo[index].Team == 0 || _gPlayerInfo[index].Amount == 0 || player.TeamNum <= 1)
+                if (player == null || !player.IsValid || _gPlayerInfo[index].Team == 0 || _gPlayerInfo[index].Amount == 0 || player.TeamNum <= 1)
                     continue;
                 
                 if (_gPlayerInfo[index].Team == @event.Winner)
@@ -115,17 +97,17 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
                     var amount = player.InGameMoneyServices.Account + (_gPlayerInfo[index].Amount * 2) > value ? value : player.InGameMoneyServices.Account + (_gPlayerInfo[index].Amount * 2);
                     
                     player.InGameMoneyServices.Account = amount;
-                    player.PrintToChat($"{Config.YouWonMessage?.Replace("{chat-prefix}", Config.ChatPrefix).Replace("{amount}", $"{amount}")}");
+                    player.PrintToChat(Localizer["YouWonMessage"].Value.Replace("{amount}", amount.ToString()));
                 }
                 else
-                    player.PrintToChat($"{Config.YouLostMessage?.Replace("{chat-prefix}", Config.ChatPrefix).Replace("{amount}", $"{_gPlayerInfo[index].Amount}")}");
+                    player.PrintToChat(Localizer["YouLostMessage"].Value.Replace("{amount}", _gPlayerInfo[index].Amount.ToString()));
             }
             
             _gPlayerInfo.Clear();
             return HookResult.Continue;
         });
         
-        RegisterEventHandler<EventRoundStart>((@event, info) =>
+        RegisterEventHandler<EventRoundStart>((_, _) =>
         {
             _gIsBetRestricted = false;
             
@@ -143,7 +125,7 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
 
         if (command.ArgCount < 3)
         {
-            player.PrintToChat($"{Config.UsageCommandMessage?.Replace("{chat-prefix}", Config.ChatPrefix)}");
+            player.PrintToChat(Localizer["UsageCommandMessage"]);
             return;
         }
 
@@ -152,31 +134,31 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
 
         if(_gPlayerInfo.TryGetValue(index, out var pInfo))
         {
-            player.PrintToChat($"{Config.AlreadyBetMessage?.Replace("{chat-prefix}", Config.ChatPrefix).Replace("{team}", teams[pInfo.Team]).Replace("{amount}", $"{pInfo.Amount}")}");
+            player.PrintToChat(Localizer["AlreadyBetMessage"].Value.Replace("{team}", teams[pInfo.Team]).Replace("{amount}", $"{pInfo.Amount}"));
             return;
         }
 
         if (_gIsBetRestricted)
         {
-            player.PrintToChat($"{Config.RestrictedBetMessage?.Replace("{chat-prefix}", Config.ChatPrefix)}");
+            player.PrintToChat(Localizer["RestrictedBetMessage"]);
             return;
         }
         
         if (player.PawnIsAlive)
         {
-            player.PrintToChat($"{Config.BetAliveMessage?.Replace("{chat-prefix}", Config.ChatPrefix)}");
+            player.PrintToChat(Localizer["BetAliveMessage"]);
             return;
         }
         
         if (player.TeamNum <= 1)
         {
-            player.PrintToChat($"{Config.RestrictedTeamMessage?.Replace("{chat-prefix}", Config.ChatPrefix)}");
+            player.PrintToChat(Localizer["RestrictedTeamMessage"]);
             return;
         }
 
         if (!HasTeamPlayersAlive(2) || !HasTeamPlayersAlive(3))
         {
-            player.PrintToChat($"{Config.BetAllPlayersDeathMessage?.Replace("{chat-prefix}", Config.ChatPrefix)}");
+            player.PrintToChat(Localizer["BetAllPlayersDeathMessage"]);
             return;
         }
         
@@ -189,7 +171,7 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
             case "ct":
                 break;
             default:
-                player.PrintToChat($"{Config.InvalidTeamMessage?.Replace("{chat-prefix}", Config.ChatPrefix)}");
+                player.PrintToChat(Localizer["InvalidTeamMessage"]);
                 return;
         }
         
@@ -203,7 +185,7 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
         int value = cvar.GetPrimitiveValue<int>(), playerMoney = player.InGameMoneyServices.Account;
         if (playerMoney >= value)
         {
-            player.PrintToChat($"{Config.MaxMoneyMessage?.Replace("{chat-prefix}", Config.ChatPrefix)}");
+            player.PrintToChat(Localizer["MaxMoneyMessage"]);
             return;
         }
         
@@ -214,7 +196,7 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
         {
             if (!int.TryParse(thirdArg, out var amount))
             {
-                player.PrintToChat($"{Config.InvalidAmountMessage?.Replace("{chat-prefix}", Config.ChatPrefix)}");
+                player.PrintToChat(Localizer["InvalidAmountMessage"]);
                 return;
             }
 
@@ -223,13 +205,13 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
 
         if (betAmount < Config.MinBetAmount || betAmount > Config.MaxBetAmount)
         {
-            player.PrintToChat($"{Config.InvalidAmountMinMaxMessage?.Replace("{chat-prefix}", Config.ChatPrefix).Replace("{MinBetAmount}", $"{Config.MinBetAmount}").Replace("{MaxBetAmount}", $"{Config.MaxBetAmount}")}");
+            player.PrintToChat(Localizer["InvalidAmountMinMaxMessage"].Value.Replace("{MinBetAmount}", $"{Config.MinBetAmount}").Replace("{MaxBetAmount}", $"{Config.MaxBetAmount}"));
             return;
         }
         
         if (playerMoney < betAmount)
         {
-            player.PrintToChat($"{Config.NotEnoughMoneyMessage?.Replace("{chat-prefix}", Config.ChatPrefix).Replace("{money}", $"{betAmount-playerMoney}").Replace("{amount}", $"{betAmount}")}");
+            player.PrintToChat(Localizer["NotEnoughMoneyMessage"].Value.Replace("{money}", $"{betAmount-playerMoney}").Replace("{amount}", $"{betAmount}"));
             return;
         }
         
@@ -240,23 +222,6 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
         });
         
         player.InGameMoneyServices.Account -= betAmount;
-        player.PrintToChat($"{Config.YouBetMessage?.Replace("{chat-prefix}", Config.ChatPrefix).Replace("{team}", teams[_gPlayerInfo[index].Team]).Replace("{amount}", $"{betAmount}")}");
-    }
-    
-    private string ModifyColorValue(string msg)
-    {
-        if (!msg.Contains('{')) return string.IsNullOrEmpty(msg) ? "[TeamBet]" : msg;
-        var modifiedValue = msg;
-        foreach (var field in typeof(ChatColors).GetFields())
-        {
-            var pattern = $"{{{field.Name}}}";
-            if (msg.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-            {
-                modifiedValue = modifiedValue.Replace(pattern, field.GetValue(null)?.ToString(), StringComparison.OrdinalIgnoreCase);
-            }
-            if (msg.StartsWith(pattern, StringComparison.OrdinalIgnoreCase))
-                modifiedValue = $" {modifiedValue}";
-        }
-        return modifiedValue;
+        player.PrintToChat(Localizer["YouBetMessage"].Value.Replace("{team}", teams[_gPlayerInfo[index].Team]).Replace("{amount}", $"{betAmount}"));
     }
 }
