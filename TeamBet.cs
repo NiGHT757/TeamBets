@@ -11,23 +11,8 @@ namespace TeamBet;
 
 public class TeamBetConfig : BasePluginConfig
 {
-    [JsonPropertyName("ChatPrefix")] public string? ChatPrefix { get; set; } = "[{LightRed}TeamBet{Default}]";
     [JsonPropertyName("MinBetAmount")] public int MinBetAmount { get; set; } = 1;
     [JsonPropertyName("MaxBetAmount")] public int MaxBetAmount { get; set; } = 16000;
-    [JsonPropertyName("YouWonMessage")] public string? YouWonMessage { get; set; } = "{chat-prefix} You won {green}${amount}";
-    [JsonPropertyName("YouLostMessage")] public string? YouLostMessage { get; set; } = "{chat-prefix} You lost {red}${amount}";
-    [JsonPropertyName("UsageCommandMessage")] public string? UsageCommandMessage { get; set; } = "{red}ERROR:{default} Usage: bet <team> <amount>";
-    [JsonPropertyName("AlreadyBetMessage")] public string? AlreadyBetMessage { get; set; } = "{red}ERROR:{default} You already bet, your bet: {team} {Green}${amount}";
-    [JsonPropertyName("RestrictedBetMessage")] public string? RestrictedBetMessage { get; set; } = "{red}ERROR:{default} You can't bet right now.";
-    [JsonPropertyName("BetAliveMessage")] public string? BetAliveMessage { get; set; } = "{red}ERROR:{default} You can't bet while you're alive.";
-    [JsonPropertyName("RestrictedTeamMessage")] public string? RestrictedTeamMessage { get; set; } = "{red}ERROR:{default} You can't bet from this team.";
-    [JsonPropertyName("BetAllPlayersDeathMessage")] public string? BetAllPlayersDeathMessage { get; set; } = "{red}ERROR:{default} You can't bet while all players are death";
-    [JsonPropertyName("InvalidTeamMessage")] public string? InvalidTeamMessage { get; set; } = "{red}ERROR:{default} Invalid team, use {red}t{default} or {blue}ct{default}.";
-    [JsonPropertyName("MaxMoneyMessage")] public string? MaxMoneyMessage { get; set; } = "{red}ERROR:{default} You can't bet, you already have the maximum amount of money.";
-    [JsonPropertyName("InvalidAmountMessage")] public string? InvalidAmountMessage { get; set; } = "{red}ERROR:{default} Invalid amount.";
-    [JsonPropertyName("InvalidAmountMinMaxMessage")] public string? InvalidAmountMinMaxMessage { get; set; } = "{red}ERROR:{default} Invalid amount, minimum to bet: {green}{MinBetAmount}{default}, maximum: {red}{MaxBetAmount}{default}.";
-    [JsonPropertyName("NotEnoughMoneyMessage")] public string? NotEnoughMoneyMessage { get; set; } = "{red}ERROR:{default} You need {red}{money}{default} more to bet {red}{amount}{default}.";
-    [JsonPropertyName("YouBetMessage")] public string? YouBetMessage { get; set; } = "{chat-prefix} You bet {green}${amount}{default} on {team} team.";
 }
 
 [MinimumApiVersion(100)]
@@ -196,7 +181,7 @@ public class TeamBet : BasePlugin, IPluginConfig<TeamBetConfig>
         {
             if (!int.TryParse(thirdArg, out var amount))
             {
-                player.PrintToChat(Localizer["InvalidAmountMessage"]);
+                player.PrintToChat(Localizer["InvalidAmountMinMaxMessage"].Value.Replace("{MinBetAmount}", $"{Config.MinBetAmount}").Replace("{MaxBetAmount}", $"{Config.MaxBetAmount}"));
                 return;
             }
 
